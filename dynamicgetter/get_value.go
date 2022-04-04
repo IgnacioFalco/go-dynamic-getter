@@ -6,7 +6,7 @@ import (
 	"reflect"
 )
 
-func GetField(v interface{}, name string) (interface{}, error) {
+func GetField(v interface{}, name string, ignoreZero bool) (interface{}, error) {
 	// v debe ser un puntero a una estructura
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr || rv.Elem().Kind() != reflect.Struct {
@@ -40,10 +40,13 @@ func GetField(v interface{}, name string) (interface{}, error) {
 
 	*/
 	// Si el valor es el zero value de su tipo, devolvemos un error
-	if fv.IsZero() {
-		return nil, fmt.Errorf("el campo %s esta vacio", name)
+	if !ignoreZero {
+		if fv.IsZero() {
+			return nil, fmt.Errorf("el campo %s esta vacio", name)
+		}
+
 	}
 
 	// retornamos el valor del campo, y un error nulo
-	return fv, nil
+	return fv.Interface(), nil
 }
