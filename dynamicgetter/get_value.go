@@ -6,11 +6,16 @@ import (
 	"reflect"
 )
 
+var ErrInvalidField = fmt.Errorf("invalid field")
+var ErrInvalidObject = errors.New("v must be a pointer to struct")
+var ErrUnaccesableValue = fmt.Errorf("cannot read value of unexported field")
+var ErrZeroValue = fmt.Errorf("value of field is zero")
+
 func GetField(v interface{}, name string, ignoreZero bool) (interface{}, error) {
 	// v debe ser un puntero a una estructura
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr || rv.Elem().Kind() != reflect.Struct {
-		return nil, errors.New("v debe ser un puntero a una estructura")
+		return nil, ErrInvalidObject
 	}
 
 	// Obtengo el valor subyacente al puntero
@@ -22,12 +27,12 @@ func GetField(v interface{}, name string, ignoreZero bool) (interface{}, error) 
 	fv := rv.FieldByName(name)
 	// Verifico que el campo exista dentro de mi estructura
 	if !fv.IsValid() {
-		return nil, fmt.Errorf("%s no existe en la estructura", name)
+		return nil, ErrInvalidField
 	}
 
 	// Si el campo no está exportado, no deberiamos poder acceder a el
 	if !fv.CanSet() {
-		return nil, fmt.Errorf("no es posible acceder al campo %s", name)
+		return nil, ErrUnaccesableValue
 	}
 
 	/*
@@ -42,11 +47,10 @@ func GetField(v interface{}, name string, ignoreZero bool) (interface{}, error) 
 	// Si el valor es el zero value de su tipo, devolvemos un error
 	if !ignoreZero {
 		if fv.IsZero() {
-			return nil, fmt.Errorf("el campo %s esta vacio", name)
+			return nil, ErrZeroValue
 		}
 
 	}
-
 	// retornamos el valor del campo, y un error nulo
 	return fv.Interface(), nil
 }
